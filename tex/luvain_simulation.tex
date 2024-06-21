@@ -1,0 +1,166 @@
+\documentclass{article}
+\usepackage{amsmath}
+\title{Reframing Hegselmann-Krause Dynamics with conformity}
+\author{Brandon Zerbe}
+\begin{document}
+\maketitle
+\section{Differential reformulation}
+
+In this section I reformulate Hegselmann-Krause (HK) dynamics in terms of differentials,
+a concept from calculus that is widely used in physics and engineering.
+The formulation of HK dynamics you use is known as difference equations, and I argue that these difference
+equations really arise from Euler's method of integration where the difference can be
+expressed as a differential.  This reformulation is important because it provides standard
+tools that allow further analysis of the model without resorting to simulation.
+
+I also introduce slightly modified notation.  Specifically, I write values in position space,
+what you denote as $o_i$, as vectors, ${\vec{o}}_i$, which can be thought of as an arrow from $0$
+to $o_i$.  This is standard notation although it is often not done for 1D systems; 
+I choose to use the vector notation here 
+for three reasons: (1) it allows us to keep track of the sign of
+differences, (2) it will allow us to use the inner product to simplify some of the later analysis we do,
+and (3) it makes generalization to higher dimensions easier.  Note, with this notation,
+$o_i = |{\vec{o}}_i|$, so parameters that are otherwise vectors but which do not have vector symbols
+denote the magnitude of a distance.
+
+HK dynamics difference are defined in your 2023 paper, which I summarize as
+\begin{subequations}
+    \begin{align}
+        {\vec{d}}_{i,j}(t) = {\vec{o}}_j(t) - {\vec{o}}_i(t) \label{eq:diff-vec}\\
+        {\vec{o}}_i(t) &= {\vec{o}}_i(t-1) + \alpha_i' \frac{1}{|N_i(t-1)|} \sum_{j\in N_i(t-1)}  {\vec{d}}_{i,j}\label{eq:opin-diff}\\
+        N_i(t) &= {j: d_{i,j}(t) < \epsilon_i} \label{eq:neighborhood}
+    \end{align}
+\end{subequations}    
+Note that only Eq. \ref{eq:opin-diff} relates the values of parameters at time $t$ to 
+to values of parameters at time $t - 1$; that is, the left hand side of this expression is the value of the
+opinion vector parameter at time $t$ while the right hand side is an expression evaluated at time $t-1$.
+Eq. \ref{eq:opin-diff} is what I mean when I say difference equation.  The other two expressions define the
+"difference vector" (Eq. \ref{eq:diff-vec}) and the "neighborhood of $i$" (Eq. \ref{eq:neighborhood}), and note that
+both sides of these expression are evaluated at the same "time snapshot".  
+Henceforth, I will only explicitly
+use the time dependence notation when writing the difference equation, and for brevity
+I will make the time dependence in expression like Eqs. \ref{eq:diff-vec} and \ref{eq:neighborhood}
+implicit.  That is ${\vec{d}}_{i,j} = {\vec{o}}_j - {\vec{o}}_i$ and $N_i = {j: d_{i,j} < \epsilon_i}$
+are the respective versions of these two equations with implicit time dependence.
+This is standard notational choices in analysis, but if it leads to confusion about 
+what depends on time, don't hesitate to ask.
+
+Note that Eq. \ref{eq:opin-diff} can be re-written somewhat by analyzing the sum.
+Namely, $ \frac{1}{|N_i|} \sum_{j\in N_i} {\vec{o}}_j$ is the mean of all of the opinions
+within $\epsilon_i$ of agent $i$.  Denote this mean as
+\begin{align}
+    {\vec{{\bar{o}}}}_i = \frac{1}{|N_i|} \sum_{j\in N_i} {\vec{o}}_j\label{eq:neighborhood-mean}
+\end{align}
+which again implicitly depends on time.  Call this the mean opinion in $i$'s neighborhood.
+
+Further,  
+my reading of Eq. \ref{eq:opin-diff} is that it assumes that the
+timestep is sufficiently small to apply Euler integration as a strategy to obtain a
+dynamic solution for the opinions.  If you are unfamiliar,
+Euler integration takes the form of 
+\begin{align}
+    x(t+dt) &\approx x(t) + \frac{dx}{dt}(t) dt\label{eq:euler-integration}
+\end{align}
+which converges to the true answer (up to compuational truncation error) as $dt$, the time step,
+is taken smaller and smaller.  Here $\frac{dx}{dt}$ is known as a "differential", which
+was a concept introduced about 400 years ago independently by Newton and Leibniz; the analysis of
+differentials is commonly called "calculus" [which I personally see as a hubrus as calculus should
+really refer to any type of calculation, but that's how we use the word now]
+and when $x$ is a vector, the analysis is called "vector calculus".  Vector calculus forms the
+mathematical backbone of classical physics, so vector calculus is very well understood by many people.
+
+The difference equation is now ready to be reformulated as a differential.
+By rescaling the parameter $\alpha'$ in Eq. \ref{eq:opin-diff} and comparing this equation to Eq.
+\ref{eq:euler-integration}, we can write an expression for the differential
+\begin{align}
+    \frac{d {\vec{o}}_i}{dt} = \alpha_i ({\vec{\bar{o}}}_i - {\vec{o}}_i) \label{eq:opin-deriv}
+\end{align}
+Note that this expression again has implicit time dependence and the differntial can be
+thought of a rate of change in time for the $i^{th}$ opinion.
+That is, the agent $i$ moves toward the mean of the opions of its neighborhood at a rate proportional
+to its distance from this mean.
+For brevity, denote this differential by ${\vec{r}}_i = \frac{d {\vec{o}}_i}{dt}$;
+physically, the interpretation of ${\vec{r}}_i$ is that the agent $i$ moves toward
+the mean of the opinions within its neighborhood at a rate proportional
+to its distance from the it's neighborhood mean.
+Also note that I subtletly change $\alpha'$ to $\alpha$; this is intention, but
+this will not change how we implement the constant parameter $\alpha_i$ in practice and
+can largely be ignored unless you want to talk about finer points of calculus. 
+While Eq. (\ref{eq:opin-deriv}) may look as if it could be solve via separation by parts (if
+you are familiar with that technique), note that
+the parameter ${\vec{\bar{o}}}_i$ is really a function of all of the opinions; as a result,
+if we are really lucky and clever, we may solve this with further analysis, but in many cases
+where luck and/or cleverness fails us, we will obtain solutions with $N$-particle simulations.
+
+\subsection{TLDR}
+In summary, the differential form of HK dynamics can be written as
+\begin{subequations}\label{eq:update-eqs}
+    \begin{align}
+        {\vec{r}}_{i} &= \alpha_i ({\vec{\bar{o}}}_i - {\vec{o}}_i)\label{eq:update:rate}\\
+        {\vec{o}}_i(t) &= {\vec{o}}_i(t-1) + {\vec{r}}_i(t) ~ dt\label{eq:update:opin}
+    \end{align}
+\end{subequations} 
+These equations provide a set of ordinary differential equations that can be used to conduct Euler integration
+for our $N$-particle simulation.  That is, we recursively follow the cycle of steps:
+\begin{enumerate}
+  {\item start off with some initial values ($o_i$) for $i \in {1, 2, ..., N-1 , N}$}
+  {\item calculate the rate of change using these values using Eq. \ref{eq:update:rate}
+the definition of the ${\vec{\bar{o}}}_i$ in Eq. \ref{eq:neighborhood-mean}}
+  {\item update the opinion values at the next time step with Eq. \ref{eq:update:opin}}
+  {\item return to step 1}
+\end{enumerate}
+until we are "done".  This 4-step iterative protocol is what I mean by $N$-particle
+simulation, and the history of every $o_i$ in time, which is what I mean by the solution to your problem.
+I assume you did $N$-particle simulations with the difference equations (without the explicit $dt$) in your previous
+work,
+and you may be wondering why I just spent 2 pages re-framing what you did resulting in something that looks
+almost identical but with funny words sprinkled throughout.
+The reason I did this reframing is that it allows us to obtain additional insight, perhaps even an analytic
+approximation to the solution, which I will examine in the next section.
+
+
+
+
+\section{The distribution evolution approach}
+When we desire to examine stochastic effects, we will need to implement the $N$-particle simulation;
+however, when we are interested in only the "average" evolution, we can adopt a full distribution approach.
+This section develops the equations necessary for the full distribution approach limitted to a single $\alpha$
+and single $\epsilon$; extension of this treatment to additional $\alpha$'s and $\epsilon$'s will be
+done in a later section.
+
+Instead of starting with a sample of $N$ particles drawn from some analytic distribution,
+we retain the analytic distribution at time $t$ and opinion $o$
+which we denote as $\rho(o, t)$.  For instance, the initial uniform- and truncated
+normal- distributions
+have the following function forms on $o \in [-1, 1]$, respectively:
+\begin{subequations}
+    \begin{align}
+        \rho_{unif}(o, 0) &= \frac{1}{2}\\
+        \rho_{0, norm}(o, 0) &= A e^{\frac{(o-\mu_o)^2}{2 \sigma_o^2}}
+    \end{align}
+\end{subequations}
+where $\mu_o$ and $\sigma_o$ are standard parameters (usually the 
+mean and standard deviation although
+they can't be interpretted as such here) for the normal distribution
+and $A$ is a normalization constant so that $\int_{-1}^1 \rho_{norm}(0) = 1$.  Again, though,
+this analysis will derive the expressions needed to obtain the functional form of $\rho(o, t)$mean of th
+for any $\rho(o, 0)$.
+Note that outside of $[-1, 1]$, we will set $\rho_(o,0) = 0$ by the confines of our problem; this is a convenience
+that allows us to simplify argumentation.
+
+For a given $\rho(o, 0)$, we write the initial mean of the $i^{th}$ neighborhood:
+\begin{align}
+    {\vec{bar{o}}}(o, 0) = \int_{o - \epsilon}^{o + \epsilon} p \rho(p, 0) dp
+\end{align}
+which is just the definition of mean defined on the neighborhood at $o$. 
+Note that this initial mean of the $i^{th}$ neighborhood
+is directly calculated from $\rho(o, 0)$ and therfore can be treated as an input parameter.
+The next question is "How does ${\vec{bar{o}}}(o, t)$ evolve in time?"
+
+To answer this question, we use calculus.
+
+This approach can be though of as weighting
+every starting location on $[-1, 1]$ by $\rho(0)$; conceptually, this is equivalent to
+sampling $N \to \infty$, which is why we see the stochast fluctuations, which scale as $\frac{1}{\sqrt{N}}$, fall
+to zero. 
+\end{document}
